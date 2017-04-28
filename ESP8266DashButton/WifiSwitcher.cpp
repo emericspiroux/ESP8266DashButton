@@ -85,7 +85,7 @@ void WifiSwitcher::getHTTPIndexPage(){
   } else if (this->successMessage != NULL){
     content +=String("<div class='success'>") + *this->successMessage + String("</div>");
   }
-  content += "<input type='text' name='SSID' placeholder='SSID'><input type='password' name='PASSWORD' placeholder='Password'><input type='submit' value='Connexion'></form></body></html>";
+  content += "<input type='text' name='SSID' placeholder='SSID'><input type='password' name='PASSWORD' placeholder='Password'><input type='text' name='WEBHOOK' placeholder='http://'><input type='submit' value='Connexion'></form></body></html>";
   this->server->send(200, "text/html", content);
 }
 
@@ -95,11 +95,14 @@ void WifiSwitcher::postHTTPInternetWifi(){
   this->server->sendHeader("Cache-Control","no-cache");
   this->server->sendHeader("Set-Cookie","ESPSESSIONID=1");
   
-  if (this->server->hasArg("SSID") && this->server->hasArg("PASSWORD")){
+  if (this->server->hasArg("SSID") && this->server->hasArg("PASSWORD")){//WEBHOOK
+    this->webhook = new String(this->server->arg("WEBHOOK"));
+    
     if (ssid && password){
       WiFi.disconnect();
       WiFi.mode(WIFI_AP_STA);
       WiFi.begin(this->server->arg("SSID").c_str(), this->server->arg("PASSWORD").c_str()); 
+      
       boolean hasError = false;
       while (WiFi.status() != WL_CONNECTED) { 
           switch(WiFi.status()) {
@@ -128,6 +131,8 @@ void WifiSwitcher::postHTTPInternetWifi(){
       }
       
       if (WiFi.status() != WL_CONNECTED){
+        WiFi.printDiag(Serial);
+        WiFi.mode(WIFI_AP);
         WiFi.softAP(ssid.c_str(), password.c_str());
         this->server->sendHeader("Location","/");
         digitalWrite(LED_BUILTIN, LOW);
@@ -141,6 +146,7 @@ void WifiSwitcher::postHTTPInternetWifi(){
     }
   } else {
     this->errorMessage = new String("Please enter ssid and password");
+    this->server->sendHeader("Location","/");
   }
 
   this->server->send(301);

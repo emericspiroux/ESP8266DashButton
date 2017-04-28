@@ -16,6 +16,7 @@ class WifiSwitcher {
   public:
     // Attributs
     e_wifiState state = STATION;
+    String *webhook = NULL;
   
     // Constructor
     WifiSwitcher();
